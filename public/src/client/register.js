@@ -140,13 +140,13 @@ define('forum/register', [
         }
     }
 
+    // check username
     function suggestAlternativeUsername(username, username_notify) {
         const suggestions = generateUsernameSuggestions(username);
     
         checkUsernameAvailability(suggestions)
             .then(availableUsername => {
                 if (availableUsername) {
-                    // Show the suggestion in the UI
                     showError(username_notify, `[[error:username-taken]] Maybe try "${availableUsername}"`);
                 } else {
                     showError(username_notify, '[[error:username-taken]] No available suggestions.');
@@ -157,6 +157,7 @@ define('forum/register', [
             });
     }
 
+    // generate username
     function generateUsernameSuggestions(username) {
         const suggestions = [];
         for (let i = 1; i <= 5; i++) {
@@ -167,6 +168,7 @@ define('forum/register', [
         return suggestions;
     }
     
+    // verify generated username suggestions
     function checkUsernameAvailability(suggestions) {
         const promises = suggestions.map(suggestion => 
             Promise.allSettled([
