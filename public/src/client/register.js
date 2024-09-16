@@ -131,13 +131,62 @@ define('forum/register', [
                 if (results.every(obj => obj.status === 'rejected')) {
                     showSuccess(username_notify, successIcon);
                 } else {
-                    showError(username_notify, '[[error:username-taken]]');
+                    // showError(username_notify, '[[error:username-taken]]');
+                    suggestAlternativeUsername(username, username_notify);
                 }
 
                 callback();
             });
         }
     }
+
+    function suggestAlternativeUsername(username, username_notify) {
+        const suggestions = generateUsernameSuggestions(username);
+    
+        checkUsernameAvailability(suggestions)
+            .then(availableUsername => {
+                if (availableUsername) {
+                    // Show the suggestion in the UI
+                    showError(username_notify, `[[error:username-taken]] Maybe try "${availableUsername}"`);
+                } else {
+                    showError(username_notify, '[[error:username-taken]] No available suggestions.');
+                }
+            })
+            .catch(error => {
+                console.error('Error checking username availability:', error);
+            });
+    }
+
+    function generateUsernameSuggestions(username) {
+        const suggestions = [];
+        for (let i = 1; i <= 5; i++) {
+            suggestions.push(`${username}${i}`);
+            suggestions.push(`${username}_user${i}`);
+            suggestions.push(`${username}_${Math.floor(Math.random() * 1000)}`);
+        }
+        return suggestions;
+    }
+    
+    function checkUsernameAvailability(suggestions) {
+        const promises = suggestions.map(suggestion => 
+            Promise.allSettled([
+                api.head(`/users/bySlug/${suggestion}`, {}),
+                api.head(`/groups/${suggestion}`, {})
+            ])
+            .then(results => ({
+                username: suggestion,
+                available: results.every(obj => obj.status === 'rejected')
+            }))
+        );
+    
+        return Promise.all(promises)
+            .then(results => {
+                const availableUsernameObj = results.find(result => result.available);
+                return availableUsernameObj ? availableUsernameObj.username : null;
+            });
+    }
+    
+    
 
     function validatePassword(password, password_confirm) {
         const password_notify = $('#password-notify');
